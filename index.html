@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bolão de Jogos — Apostador</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f0f2f5; color: #1a1a2e; padding: 20px;
+    }
+    .container { max-width: 960px; margin: 0 auto; }
+    h1 { text-align: center; margin-bottom: 20px; font-size: 26px; }
+    h1 span { color: #e63946; }
+    .nav-admin {
+      text-align: center; margin-bottom: 20px;
+    }
+    .nav-admin a {
+      color: #888; font-size: 13px; text-decoration: none;
+    }
+    .nav-admin a:hover { color: #4361ee; }
+
+    .card {
+      background: #fff; border-radius: 12px; padding: 20px;
+      margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .card-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 16px; padding-bottom: 12px;
+      border-bottom: 2px solid #f0f2f5;
+    }
+    .card-header h2 { font-size: 18px; color: #333; }
+    .hidden { display: none !important; }
+
+    .btn {
+      padding: 10px 20px; border: none; border-radius: 8px;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary { background: #4361ee; color: #fff; }
+    .btn-primary:hover { background: #3651d4; }
+    .btn-success { background: #2ec4b6; color: #fff; }
+    .btn-success:hover { background: #25a99d; }
+    .btn-outline { background: transparent; border: 2px solid #e0e0e0; color: #666; }
+    .btn-outline:hover { border-color: #4361ee; color: #4361ee; }
+    .btn-sm { padding: 6px 14px; font-size: 12px; }
+
+    .part-form { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+    .part-form input {
+      padding: 10px 14px; border: 2px solid #e0e0e0; border-radius: 8px;
+      font-size: 14px; outline: none; transition: border-color 0.2s;
+    }
+    .part-form input:focus { border-color: #4361ee; }
+    .part-form input[type="text"] { flex: 1; min-width: 180px; }
+    .part-form input[type="tel"] { flex: 1; min-width: 160px; }
+    .part-info { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .part-info strong { font-size: 16px; }
+
+    .jogo {
+      display: flex; align-items: center; gap: 12px;
+      padding: 16px; border-radius: 8px;
+      border: 1px solid #f0f2f5; margin-bottom: 10px; flex-wrap: wrap;
+    }
+    .jogo-info { flex: 1; min-width: 180px; }
+    .jogo-times { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+    .jogo-detalhes { font-size: 12px; color: #888; }
+    .jogo-odds { display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
+    .jogo-odds span {
+      font-size: 11px; background: #f8f9fa; padding: 2px 8px;
+      border-radius: 4px; color: #666;
+    }
+
+    .jogo-placar {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .jogo-placar input {
+      width: 48px; padding: 8px; text-align: center;
+      border: 2px solid #e0e0e0; border-radius: 8px;
+      font-size: 16px; font-weight: 700; outline: none;
+    }
+    .jogo-placar input:focus { border-color: #4361ee; }
+    .jogo-placar .sep { font-weight: 700; color: #888; font-size: 14px; }
+    .resultado {
+      font-weight: 700; font-size: 18px; padding: 4px 12px; border-radius: 8px;
+    }
+    .resultado.finalizado { background: #e8f5e9; color: #2e7d32; }
+    .resultado.pendente { background: #fff3e0; color: #e65100; }
+    .resultado.bloqueado { background: #e0e0e0; color: #666; }
+
+    .palpite-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 0; border-bottom: 1px solid #f0f2f5; gap: 8px;
+    }
+    .palpite-item:last-child { border-bottom: none; }
+    .palpite-acerto { color: #2e7d32; font-weight: 700; }
+    .palpite-erro { color: #c62828; font-weight: 700; }
+    .palpite-pendente { color: #e65100; }
+
+    .vazio { text-align: center; padding: 32px; color: #999; }
+
+    .toast {
+      position: fixed; bottom: 20px; right: 20px;
+      background: #333; color: #fff; padding: 12px 24px;
+      border-radius: 8px; font-size: 14px;
+      opacity: 0; transition: opacity 0.3s; z-index: 999;
+    }
+    .toast.show { opacity: 1; }
+    .toast.erro { background: #e63946; }
+    .toast.sucesso { background: #2ec4b6; }
+
+    @media (max-width: 600px) {
+      .jogo { flex-direction: column; align-items: stretch; }
+      .jogo-placar { justify-content: center; }
+      .part-form { flex-direction: column; }
+      .part-form input { min-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>⚽ <span>Bolão</span> de Jogos</h1>
+
+  <!-- Identificação -->
+  <div class="card">
+    <div class="card-header">
+      <h2>Entrar</h2>
+      <span id="status-part" style="font-size:13px;color:#888;">Não identificado</span>
+    </div>
+    <div class="part-form" id="form-part">
+      <input type="text" id="input-nome" list="lista-nomes" placeholder="Seu nome" autocomplete="off" />
+      <datalist id="lista-nomes"></datalist>
+      <input type="tel" id="input-telefone" placeholder="Seu telefone" />
+      <button class="btn btn-primary" onclick="entrar()">Entrar</button>
+    </div>
+    <div class="part-info hidden" id="info-part">
+      <strong id="nome-exibido"></strong>
+      <span style="color:#888;" id="tel-exibido"></span>
+      <button class="btn btn-outline btn-sm" onclick="sair()">Sair</button>
+    </div>
+  </div>
+
+  <!-- Jogos -->
+  <div class="card">
+    <div class="card-header">
+      <h2>Jogos</h2>
+      <span id="contagem-jogos" style="font-size:13px;color:#888;"></span>
+    </div>
+    <div id="lista-jogos"></div>
+    <div style="text-align:center;margin-top:16px;">
+      <button class="btn btn-success" onclick="salvarPalpites()">💾 Salvar Palpites</button>
+    </div>
+  </div>
+
+  <!-- Meus palpites -->
+  <div class="card">
+    <div class="card-header"><h2>Meus Palpites</h2></div>
+    <div id="lista-palpites"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let jogos = [];
+let participantes = [];
+let palpites = [];
+let participanteAtual = null;
+
+function mostrarToast(msg, tipo) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast ' + (tipo || '') + ' show';
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+async function carregarDados() {
+  try {
+    const [rj, rp, rpp] = await Promise.all([
+      fetch('jogos.json').then(r => r.json()),
+      fetch('participantes.json').then(r => r.json()),
+      fetch('palpites.json').then(r => r.json())
+    ]);
+    jogos = rj; participantes = rp; palpites = rpp;
+  } catch (e) {
+    const ls = localStorage;
+    jogos = JSON.parse(ls.getItem('jogos.json') || '[]');
+    participantes = JSON.parse(ls.getItem('participantes.json') || '[]');
+    palpites = JSON.parse(ls.getItem('palpites.json') || '[]');
+  }
+  atualizarDatalist();
+  renderizarJogos();
+  renderizarPalpites();
+  document.getElementById('contagem-jogos').textContent = jogos.length + ' jogos';
+}
+
+function atualizarDatalist() {
+  const dl = document.getElementById('lista-nomes');
+  dl.innerHTML = participantes.map(p => `<option value="${p.nome}"></option>`).join('');
+}
+
+function entrar() {
+  const nome = document.getElementById('input-nome').value.trim();
+  const telefone = document.getElementById('input-telefone').value.trim();
+  if (!nome || !telefone) { mostrarToast('Preencha nome e telefone', 'erro'); return; }
+
+  const p = participantes.find(x => x.nome.toLowerCase() === nome.toLowerCase());
+  if (!p) { mostrarToast('Usuário não cadastrado. Procure o admin.', 'erro'); return; }
+  if (p.telefone !== telefone) { mostrarToast('Telefone não confere com o cadastro', 'erro'); return; }
+
+  participanteAtual = p;
+  document.getElementById('form-part').classList.add('hidden');
+  document.getElementById('info-part').classList.remove('hidden');
+  document.getElementById('nome-exibido').textContent = p.nome;
+  document.getElementById('tel-exibido').textContent = p.telefone;
+  document.getElementById('status-part').textContent = 'Identificado';
+  mostrarToast('Bem-vindo(a), ' + p.nome + '!', 'sucesso');
+  renderizarJogos();
+  renderizarPalpites();
+}
+
+function sair() {
+  participanteAtual = null;
+  document.getElementById('form-part').classList.remove('hidden');
+  document.getElementById('info-part').classList.add('hidden');
+  document.getElementById('status-part').textContent = 'Não identificado';
+  document.getElementById('input-nome').value = '';
+  document.getElementById('input-telefone').value = '';
+  renderizarJogos();
+  renderizarPalpites();
+}
+
+function jogoIniciado(j) {
+  if (j.placar_casa !== null) return true;
+  if (!j.data || !j.horario) return false;
+  const agora = new Date();
+  const [h, m] = j.horario.split(':').map(Number);
+  const jogoData = new Date(j.data.split('-')[0], j.data.split('-')[1] - 1, j.data.split('-')[2], h, m);
+  return agora >= jogoData;
+}
+
+function renderizarJogos() {
+  const div = document.getElementById('lista-jogos');
+  if (!jogos.length) { div.innerHTML = '<div class="vazio">Nenhum jogo disponível</div>'; return; }
+
+  div.innerHTML = jogos.map(j => {
+    const finalizado = j.placar_casa !== null;
+    const iniciado = jogoIniciado(j);
+    const bloqueado = finalizado || iniciado;
+    const palpite = palpites.find(p => p.jogo_id === j.id && p.participante_id === participanteAtual?.id);
+    const pc = palpite ? palpite.placar_casa : '';
+    const pf = palpite ? palpite.placar_fora : '';
+
+    let resultadoHTML;
+    let statusClass;
+    if (finalizado) {
+      resultadoHTML = `<span class="resultado finalizado">${j.placar_casa} × ${j.placar_fora}</span>`;
+      statusClass = 'finalizado';
+    } else if (iniciado) {
+      resultadoHTML = `<span class="resultado pendente">🔒 Em andamento</span>`;
+      statusClass = 'bloqueado';
+    } else {
+      resultadoHTML = `<span class="resultado pendente">A confirmar</span>`;
+      statusClass = '';
+    }
+
+    const disabled = (!participanteAtual || bloqueado) ? 'disabled' : '';
+    const readonly = bloqueado ? 'readonly' : '';
+
+    return `<div class="jogo">
+      <div class="jogo-info">
+        <div class="jogo-times">${j.time_casa} × ${j.time_fora}</div>
+        <div class="jogo-detalhes">${j.data} às ${j.horario} · ${j.estadio} · ${j.fase}</div>
+        <div class="jogo-odds">
+          <span>Casa: ${j.odds_casa?.toFixed(2) || '-'}</span>
+          <span>Empate: ${j.odds_empate?.toFixed(2) || '-'}</span>
+          <span>Fora: ${j.odds_fora?.toFixed(2) || '-'}</span>
+        </div>
+      </div>
+      <div class="jogo-placar">
+        <input type="number" min="0" max="20" placeholder="—"
+          id="pc-${j.id}" value="${pc}" ${disabled} ${readonly}
+          oninput="marcarPalpite(${j.id})" />
+        <span class="sep">×</span>
+        <input type="number" min="0" max="20" placeholder="—"
+          id="pf-${j.id}" value="${pf}" ${disabled} ${readonly}
+          oninput="marcarPalpite(${j.id})" />
+        ${resultadoHTML}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function marcarPalpite(jogoId) {
+  if (!participanteAtual) return;
+  const j = jogos.find(x => x.id === jogoId);
+  if (!j || jogoIniciado(j)) return;
+  const c = parseInt(document.getElementById('pc-' + jogoId).value) || 0;
+  const f = parseInt(document.getElementById('pf-' + jogoId).value) || 0;
+  const idx = palpites.findIndex(p => p.jogo_id === jogoId && p.participante_id === participanteAtual.id);
+  if (idx >= 0) { palpites[idx].placar_casa = c; palpites[idx].placar_fora = f; }
+  else { palpites.push({ id: Date.now() + jogoId, participante_id: participanteAtual.id, jogo_id: jogoId, placar_casa: c, placar_fora: f }); }
+}
+
+function renderizarPalpites() {
+  const div = document.getElementById('lista-palpites');
+  if (!participanteAtual) { div.innerHTML = '<div class="vazio">Identifique-se para ver seus palpites</div>'; return; }
+  const meus = palpites.filter(p => p.participante_id === participanteAtual.id);
+  if (!meus.length) { div.innerHTML = '<div class="vazio">Você ainda não deu palpites</div>'; return; }
+
+  div.innerHTML = meus.map(p => {
+    const j = jogos.find(x => x.id === p.jogo_id);
+    if (!j) return '';
+    const fin = j.placar_casa !== null;
+    let status = '<span class="palpite-pendente">⏳ Pendente</span>';
+    if (fin) {
+      status = (p.placar_casa === j.placar_casa && p.placar_fora === j.placar_fora)
+        ? '<span class="palpite-acerto">✅ Acertou!</span>'
+        : '<span class="palpite-erro">❌ Errou</span>';
+    }
+    return `<div class="palpite-item">
+      <span><strong>${j.time_casa} × ${j.time_fora}</strong><br><span style="font-size:12px;color:#888;">${j.fase} · ${j.data}</span></span>
+      <span><strong>${p.placar_casa} × ${p.placar_fora}</strong> ${status}</span>
+    </div>`;
+  }).join('');
+}
+
+async function salvarJSON(arquivo, dados) {
+  localStorage.setItem(arquivo, JSON.stringify(dados, null, 2));
+  try {
+    await fetch(arquivo, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados, null, 2) });
+  } catch (e) {}
+}
+
+async function recarregarDados() {
+  try {
+    const [rj, rpp] = await Promise.all([
+      fetch('jogos.json').then(r => r.json()),
+      fetch('palpites.json').then(r => r.json())
+    ]);
+    jogos = rj; palpites = rpp;
+    localStorage.setItem('jogos.json', JSON.stringify(jogos));
+    localStorage.setItem('palpites.json', JSON.stringify(palpites));
+    renderizarJogos();
+    renderizarPalpites();
+    document.getElementById('contagem-jogos').textContent = jogos.length + ' jogos';
+  } catch (e) {}
+}
+
+async function salvarPalpites() {
+  if (!participanteAtual) { mostrarToast('Identifique-se primeiro', 'erro'); return; }
+  await salvarJSON('palpites.json', palpites);
+  await recarregarDados();
+  mostrarToast('Palpites salvos!', 'sucesso');
+}
+
+carregarDados();
+setInterval(recarregarDados, 30000);
+</script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+{
+  "name": "bolao",
+  "version": "1.0.0",
+  "description": "Bolão de Jogos",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}

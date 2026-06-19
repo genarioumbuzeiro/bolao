@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bolão de Jogos — Admin</title>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f0f2f5; color: #1a1a2e; padding: 20px;
+    }
+    .container { max-width: 960px; margin: 0 auto; }
+    h1 { text-align: center; margin-bottom: 20px; font-size: 26px; }
+    h1 span { color: #e63946; }
+    .nav-user {
+      text-align: center; margin-bottom: 20px;
+    }
+    .nav-user a {
+      color: #888; font-size: 13px; text-decoration: none;
+    }
+    .nav-user a:hover { color: #4361ee; }
+
+    .card {
+      background: #fff; border-radius: 12px; padding: 20px;
+      margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .card-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 16px; padding-bottom: 12px;
+      border-bottom: 2px solid #f0f2f5;
+    }
+    .card-header h2 { font-size: 18px; color: #333; }
+    .hidden { display: none !important; }
+
+    .btn {
+      padding: 10px 20px; border: none; border-radius: 8px;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-success { background: #2ec4b6; color: #fff; }
+    .btn-success:hover { background: #25a99d; }
+    .btn-danger { background: #e63946; color: #fff; }
+    .btn-danger:hover { background: #c92f3b; }
+    .btn-warning { background: #f4a261; color: #fff; }
+    .btn-warning:hover { background: #e08f4a; }
+    .btn-outline { background: transparent; border: 2px solid #e0e0e0; color: #666; }
+    .btn-outline:hover { border-color: #4361ee; color: #4361ee; }
+    .btn-sm { padding: 6px 14px; font-size: 12px; }
+
+    .form-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    }
+    .form-grid input {
+      padding: 10px 14px; border: 2px solid #e0e0e0; border-radius: 8px;
+      font-size: 14px; outline: none; transition: border-color 0.2s;
+    }
+    .form-grid input:focus { border-color: #4361ee; }
+    .form-grid .actions {
+      grid-column: 1 / -1; display: flex; gap: 8px; justify-content: flex-end;
+    }
+
+    .jogo {
+      display: flex; align-items: center; gap: 12px;
+      padding: 16px; border-radius: 8px;
+      border: 1px solid #f0f2f5; margin-bottom: 10px; flex-wrap: wrap;
+    }
+    .jogo-info { flex: 1; min-width: 180px; }
+    .jogo-times { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+    .jogo-detalhes { font-size: 12px; color: #888; }
+    .jogo-odds { display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
+    .jogo-odds span {
+      font-size: 11px; background: #f8f9fa; padding: 2px 8px;
+      border-radius: 4px; color: #666;
+    }
+    .jogo-acoes { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; align-items: center; }
+
+    .resultado {
+      font-weight: 700; font-size: 18px; padding: 4px 12px; border-radius: 8px;
+    }
+    .resultado.finalizado { background: #e8f5e9; color: #2e7d32; }
+    .resultado.pendente { background: #fff3e0; color: #e65100; }
+    .resultado.bloqueado { background: #e0e0e0; color: #666; }
+
+    .part-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 0; border-bottom: 1px solid #f0f2f5; gap: 8px;
+    }
+    .part-row:last-child { border-bottom: none; }
+
+    .palpite-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 0; border-bottom: 1px solid #f0f2f5; gap: 8px;
+    }
+    .palpite-item:last-child { border-bottom: none; }
+    .palpite-acerto { color: #2e7d32; font-weight: 700; }
+    .palpite-erro { color: #c62828; font-weight: 700; }
+    .palpite-pendente { color: #e65100; }
+
+    .vazio { text-align: center; padding: 32px; color: #999; }
+
+    .toast {
+      position: fixed; bottom: 20px; right: 20px;
+      background: #333; color: #fff; padding: 12px 24px;
+      border-radius: 8px; font-size: 14px;
+      opacity: 0; transition: opacity 0.3s; z-index: 999;
+    }
+    .toast.show { opacity: 1; }
+    .toast.erro { background: #e63946; }
+    .toast.sucesso { background: #2ec4b6; }
+
+    .overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 9999;
+    }
+    .overlay-card {
+      background: #fff; border-radius: 16px; padding: 32px;
+      width: 340px; max-width: 90%; text-align: center;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
+    .overlay-card h2 { margin-bottom: 8px; font-size: 20px; }
+    .overlay-card p { font-size: 13px; color: #888; margin-bottom: 20px; }
+    .overlay-card input {
+      width: 100%; padding: 12px; text-align: center; font-size: 24px;
+      font-weight: 700; letter-spacing: 4px;
+      border: 2px solid #e0e0e0; border-radius: 8px; outline: none;
+      margin-bottom: 16px;
+    }
+    .overlay-card input:focus { border-color: #4361ee; }
+    @media (max-width: 600px) {
+      .form-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="overlay" id="tela-senha">
+  <div class="overlay-card">
+    <h2>🔒 Admin</h2>
+    <p>Digite a senha dinâmica para acessar</p>
+    <input type="password" id="input-senha" maxlength="8" placeholder="------" autocomplete="off" onkeydown="if(event.key==='Enter')verificarSenha()" />
+    <button class="btn btn-primary" onclick="verificarSenha()" style="width:100%;">Entrar</button>
+  </div>
+</div>
+<div class="container" id="conteudo-admin" style="display:none;">
+  <h1>⚙️ <span>Bolão</span> — Admin</h1>
+
+  <div class="nav-user">
+    <a href="index.html">🎯 Ir para Apostador</a>
+  </div>
+
+  <!-- QR Code -->
+  <div class="card" id="card-qrcode">
+    <div class="card-header"><h2>Compartilhe com os Apostadores</h2></div>
+    <div id="qrcode-container" style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;"></div>
+  </div>
+
+  <!-- Cadastrar participante -->
+  <div class="card">
+    <div class="card-header">
+      <h2 id="titulo-form-part">Cadastrar Participante</h2>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <input type="text" id="cad-part-nome" placeholder="Nome completo" style="flex:1;min-width:200px;padding:10px 14px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;outline:none;" />
+      <input type="tel" id="cad-part-tel" placeholder="Telefone" style="flex:1;min-width:160px;padding:10px 14px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;outline:none;" />
+      <button class="btn btn-success" onclick="adicionarParticipante()">Adicionar</button>
+      <button class="btn btn-outline btn-sm hidden" id="btn-cancel-part" onclick="cancelarEdicaoPart()">Cancelar</button>
+    </div>
+  </div>
+
+  <!-- Participantes -->
+  <div class="card">
+    <div class="card-header">
+      <h2>Participantes</h2>
+      <span id="contagem-parts" style="font-size:13px;color:#888;"></span>
+    </div>
+    <div id="lista-participantes"></div>
+  </div>
+
+  <!-- Cadastrar jogo -->
+  <div class="card">
+    <div class="card-header">
+      <h2 id="titulo-form-jogo">Cadastrar Jogo</h2>
+    </div>
+    <div class="form-grid">
+      <input type="text" id="cad-time-casa" placeholder="Time casa" />
+      <input type="text" id="cad-time-fora" placeholder="Time fora" />
+      <input type="date" id="cad-data" />
+      <input type="time" id="cad-horario" value="16:00" />
+      <input type="text" id="cad-estadio" placeholder="Estádio" />
+      <input type="text" id="cad-fase" placeholder="Fase" />
+      <input type="number" step="0.01" id="cad-odds-casa" placeholder="Odd casa" />
+      <input type="number" step="0.01" id="cad-odds-empate" placeholder="Odd empate" />
+      <input type="number" step="0.01" id="cad-odds-fora" placeholder="Odd fora" />
+      <div class="actions">
+        <button class="btn btn-outline btn-sm hidden" id="btn-cancel-edicao" onclick="cancelarEdicaoJogo()">Cancelar</button>
+        <button class="btn btn-success" onclick="adicionarJogo()">Adicionar Jogo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gerenciar jogos -->
+  <div class="card">
+    <div class="card-header">
+      <h2>Gerenciar Jogos</h2>
+      <span id="contagem-admin" style="font-size:13px;color:#888;"></span>
+    </div>
+    <div id="lista-admin-jogos"></div>
+  </div>
+
+  <!-- Todos os palpites -->
+  <div class="card">
+    <div class="card-header"><h2>Todos os Palpites</h2></div>
+    <div id="lista-todos-palpites"></div>
+  </div>
+
+  <!-- Zerar -->
+  <div class="card">
+    <div class="card-header"><h2>Zerar Bolão</h2></div>
+    <div style="text-align:center;">
+      <p style="font-size:13px;color:#888;margin-bottom:12px;">Remove todos os jogos, participantes e palpites. Esta ação não pode ser desfeita.</p>
+      <button class="btn btn-danger" onclick="limparTudo()">🗑️ Limpar Todos os Dados</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let jogos = [];
+let participantes = [];
+let palpites = [];
+let editandoJogoId = null;
+let editandoPartId = null;
+
+function mostrarToast(msg, tipo) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast ' + (tipo || '') + ' show';
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+async function carregarDados() {
+  try {
+    const [rj, rp, rpp] = await Promise.all([
+      fetch('jogos.json').then(r => r.json()),
+      fetch('participantes.json').then(r => r.json()),
+      fetch('palpites.json').then(r => r.json())
+    ]);
+    jogos = rj; participantes = rp; palpites = rpp;
+  } catch (e) {
+    const ls = localStorage;
+    jogos = JSON.parse(ls.getItem('jogos.json') || '[]');
+    participantes = JSON.parse(ls.getItem('participantes.json') || '[]');
+    palpites = JSON.parse(ls.getItem('palpites.json') || '[]');
+  }
+  renderAdmin();
+}
+
+function renderAdmin() {
+  renderAdminJogos();
+  renderParticipantes();
+  renderTodosPalpites();
+  document.getElementById('contagem-admin').textContent = jogos.length + ' jogos';
+  document.getElementById('contagem-parts').textContent = participantes.length + ' participante(s)';
+}
+
+// --- Participantes CRUD ---
+
+function limparFormPart() {
+  document.getElementById('cad-part-nome').value = '';
+  document.getElementById('cad-part-tel').value = '';
+  document.getElementById('titulo-form-part').textContent = 'Cadastrar Participante';
+  document.getElementById('btn-cancel-part').classList.add('hidden');
+  editandoPartId = null;
+}
+
+function cancelarEdicaoPart() { limparFormPart(); }
+
+function adicionarParticipante() {
+  const nome = document.getElementById('cad-part-nome').value.trim();
+  const tel = document.getElementById('cad-part-tel').value.trim();
+  if (!nome || !tel) { mostrarToast('Preencha nome e telefone', 'erro'); return; }
+
+  if (participantes.some(p => p.nome.toLowerCase() === nome.toLowerCase() && p.id !== editandoPartId)) {
+    mostrarToast('Já existe um participante com este nome', 'erro');
+    return;
+  }
+
+  if (editandoPartId) {
+    const idx = participantes.findIndex(p => p.id === editandoPartId);
+    if (idx >= 0) { participantes[idx].nome = nome; participantes[idx].telefone = tel; }
+    editandoPartId = null;
+    mostrarToast('Participante atualizado!', 'sucesso');
+  } else {
+    participantes.push({ id: Date.now(), nome, telefone: tel });
+    mostrarToast('Participante cadastrado!', 'sucesso');
+  }
+
+  limparFormPart();
+  salvarJSON('participantes.json', participantes);
+  renderParticipantes();
+  document.getElementById('contagem-parts').textContent = participantes.length + ' participante(s)';
+}
+
+function editarParticipante(id) {
+  const p = participantes.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('cad-part-nome').value = p.nome;
+  document.getElementById('cad-part-tel').value = p.telefone;
+  editandoPartId = id;
+  document.getElementById('titulo-form-part').textContent = 'Editando Participante';
+  document.getElementById('btn-cancel-part').classList.remove('hidden');
+  document.getElementById('cad-part-nome').scrollIntoView({ behavior: 'smooth' });
+}
+
+function excluirParticipante(id) {
+  if (!confirm('Excluir este participante?\nOs palpites dele também serão removidos.')) return;
+  participantes = participantes.filter(p => p.id !== id);
+  palpites = palpites.filter(p => p.participante_id !== id);
+  salvarJSON('participantes.json', participantes);
+  salvarJSON('palpites.json', palpites);
+  renderAdmin();
+  document.getElementById('contagem-parts').textContent = participantes.length + ' participante(s)';
+  mostrarToast('Participante excluído', 'sucesso');
+}
+
+function renderParticipantes() {
+  const div = document.getElementById('lista-participantes');
+  if (!participantes.length) { div.innerHTML = '<div class="vazio">Nenhum participante cadastrado</div>'; return; }
+  div.innerHTML = participantes.map(p => {
+    const qtd = palpites.filter(x => x.participante_id === p.id).length;
+    return `<div class="part-row">
+      <span><strong>${p.nome}</strong> · ${p.telefone} · <span style="font-size:13px;color:#888;">${qtd} palpite(s)</span></span>
+      <span style="display:flex;gap:6px;">
+        <button class="btn btn-warning btn-sm" onclick="editarParticipante(${p.id})">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="excluirParticipante(${p.id})">🗑️</button>
+      </span>
+    </div>`;
+  }).join('');
+}
+
+// --- Jogos CRUD ---
+
+function jogoIniciado(j) {
+  if (j.placar_casa !== null) return true;
+  if (!j.data || !j.horario) return false;
+  const agora = new Date();
+  const [h, m] = j.horario.split(':').map(Number);
+  const jogoData = new Date(j.data.split('-')[0], j.data.split('-')[1] - 1, j.data.split('-')[2], h, m);
+  return agora >= jogoData;
+}
+
+function renderAdminJogos() {
+  const div = document.getElementById('lista-admin-jogos');
+  if (!jogos.length) { div.innerHTML = '<div class="vazio">Nenhum jogo cadastrado</div>'; return; }
+
+  div.innerHTML = jogos.map(j => {
+    const fin = j.placar_casa !== null;
+    const iniciado = jogoIniciado(j);
+
+    let statusLabel;
+    if (fin) {
+      statusLabel = `<span class="resultado finalizado" style="font-size:14px;">${j.placar_casa}×${j.placar_fora}</span>`;
+    } else if (iniciado) {
+      statusLabel = `<span class="resultado bloqueado" style="font-size:14px;">🔒 Em andamento</span>`;
+    } else {
+      statusLabel = `<span class="resultado pendente" style="font-size:14px;">⏳ Aguardando</span>`;
+    }
+
+    return `<div class="jogo">
+      <div class="jogo-info">
+        <div class="jogo-times">${j.time_casa} × ${j.time_fora}</div>
+        <div class="jogo-detalhes">${j.data} às ${j.horario} · ${j.estadio} · ${j.fase}</div>
+        <div class="jogo-odds">
+          <span>Casa: ${j.odds_casa?.toFixed(2) || '-'}</span>
+          <span>Empate: ${j.odds_empate?.toFixed(2) || '-'}</span>
+          <span>Fora: ${j.odds_fora?.toFixed(2) || '-'}</span>
+        </div>
+        <div class="jogo-acoes">
+          <button class="btn btn-warning btn-sm" onclick="editarJogo(${j.id})">✏️ Editar</button>
+          <button class="btn btn-danger btn-sm" onclick="excluirJogo(${j.id})">🗑️ Excluir</button>
+          ${fin || iniciado ? statusLabel : `<button class="btn btn-success btn-sm" onclick="finalizarJogo(${j.id})">✅ Finalizar</button>`}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function pegarDadosFormJogo() {
+  return {
+    time_casa: document.getElementById('cad-time-casa').value.trim(),
+    time_fora: document.getElementById('cad-time-fora').value.trim(),
+    data: document.getElementById('cad-data').value,
+    horario: document.getElementById('cad-horario').value,
+    estadio: document.getElementById('cad-estadio').value.trim(),
+    fase: document.getElementById('cad-fase').value.trim(),
+    odds_casa: parseFloat(document.getElementById('cad-odds-casa').value) || null,
+    odds_empate: parseFloat(document.getElementById('cad-odds-empate').value) || null,
+    odds_fora: parseFloat(document.getElementById('cad-odds-fora').value) || null
+  };
+}
+
+function limparFormJogo() {
+  ['cad-time-casa','cad-time-fora','cad-data','cad-horario','cad-estadio','cad-fase','cad-odds-casa','cad-odds-empate','cad-odds-fora'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('cad-horario').value = '16:00';
+  document.getElementById('titulo-form-jogo').textContent = 'Cadastrar Jogo';
+  document.getElementById('btn-cancel-edicao').classList.add('hidden');
+  editandoJogoId = null;
+}
+
+function cancelarEdicaoJogo() { limparFormJogo(); }
+
+function adicionarJogo() {
+  const d = pegarDadosFormJogo();
+  if (!d.time_casa || !d.time_fora) { mostrarToast('Preencha time casa e time fora', 'erro'); return; }
+
+  if (editandoJogoId) {
+    const idx = jogos.findIndex(j => j.id === editandoJogoId);
+    if (idx >= 0) jogos[idx] = { ...jogos[idx], ...d, placar_casa: jogos[idx].placar_casa, placar_fora: jogos[idx].placar_fora };
+    editandoJogoId = null;
+    mostrarToast('Jogo atualizado!', 'sucesso');
+  } else {
+    jogos.push({ id: Date.now(), ...d, placar_casa: null, placar_fora: null });
+    mostrarToast('Jogo adicionado!', 'sucesso');
+  }
+
+  limparFormJogo();
+  salvarJSON('jogos.json', jogos);
+  renderAdminJogos();
+  document.getElementById('contagem-admin').textContent = jogos.length + ' jogos';
+}
+
+function editarJogo(id) {
+  const j = jogos.find(x => x.id === id);
+  if (!j) return;
+  document.getElementById('cad-time-casa').value = j.time_casa || '';
+  document.getElementById('cad-time-fora').value = j.time_fora || '';
+  document.getElementById('cad-data').value = j.data || '';
+  document.getElementById('cad-horario').value = j.horario || '';
+  document.getElementById('cad-estadio').value = j.estadio || '';
+  document.getElementById('cad-fase').value = j.fase || '';
+  document.getElementById('cad-odds-casa').value = j.odds_casa ?? '';
+  document.getElementById('cad-odds-empate').value = j.odds_empate ?? '';
+  document.getElementById('cad-odds-fora').value = j.odds_fora ?? '';
+  editandoJogoId = id;
+  document.getElementById('titulo-form-jogo').textContent = 'Editando Jogo';
+  document.getElementById('btn-cancel-edicao').classList.remove('hidden');
+  document.getElementById('cad-time-casa').scrollIntoView({ behavior: 'smooth' });
+}
+
+function excluirJogo(id) {
+  if (!confirm('Excluir este jogo?')) return;
+  jogos = jogos.filter(j => j.id !== id);
+  palpites = palpites.filter(p => p.jogo_id !== id);
+  salvarJSON('jogos.json', jogos);
+  salvarJSON('palpites.json', palpites);
+  renderAdmin();
+  document.getElementById('contagem-admin').textContent = jogos.length + ' jogos';
+  mostrarToast('Jogo excluído', 'sucesso');
+}
+
+function finalizarJogo(id) {
+  const j = jogos.find(x => x.id === id);
+  if (!j) return;
+  const pc = prompt('Placar ' + j.time_casa + ':', j.placar_casa ?? '');
+  if (pc === null) return;
+  const pf = prompt('Placar ' + j.time_fora + ':', j.placar_fora ?? '');
+  if (pf === null) return;
+  const pcn = parseInt(pc), pfn = parseInt(pf);
+  if (isNaN(pcn) || isNaN(pfn)) { mostrarToast('Digite números válidos', 'erro'); return; }
+  j.placar_casa = pcn; j.placar_fora = pfn;
+  salvarJSON('jogos.json', jogos);
+  renderAdmin();
+  mostrarToast(`${j.time_casa} ${pcn} × ${pfn} ${j.time_fora}`, 'sucesso');
+}
+
+// --- Todos os palpites ---
+
+function renderTodosPalpites() {
+  const div = document.getElementById('lista-todos-palpites');
+  if (!palpites.length) { div.innerHTML = '<div class="vazio">Nenhum palpite ainda</div>'; return; }
+
+  const agrupado = {};
+  palpites.forEach(p => {
+    if (!agrupado[p.participante_id]) agrupado[p.participante_id] = [];
+    agrupado[p.participante_id].push(p);
+  });
+
+  div.innerHTML = Object.keys(agrupado).map(idPart => {
+    const part = participantes.find(p => p.id === parseInt(idPart));
+    const nome = part ? part.nome : 'ID ' + idPart;
+    const lista = agrupado[idPart];
+    let acertos = 0, total = 0;
+    const detalhes = lista.map(p => {
+      const j = jogos.find(x => x.id === p.jogo_id);
+      if (!j) return '';
+      const fin = j.placar_casa !== null;
+      if (fin) { total++; if (p.placar_casa === j.placar_casa && p.placar_fora === j.placar_fora) acertos++; }
+      return `<div class="palpite-item">
+        <span>${j.time_casa} × ${j.time_fora}</span>
+        <span><strong>${p.placar_casa} × ${p.placar_fora}</strong>
+          ${fin
+            ? (p.placar_casa === j.placar_casa && p.placar_fora === j.placar_fora ? '<span class="palpite-acerto">✅</span>' : '<span class="palpite-erro">❌</span>')
+            : '<span class="palpite-pendente">⏳</span>'}
+        </span>
+      </div>`;
+    }).join('');
+
+    return `<div class="card" style="margin-bottom:12px;padding:14px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+        <strong>${nome}</strong>
+        ${total > 0 ? `<span style="font-size:13px;color:#888;">${acertos}/${total} acertos</span>` : ''}
+      </div>
+      ${detalhes}
+    </div>`;
+  }).join('');
+}
+
+// --- Limpar tudo ---
+
+function limparTudo() {
+  if (!confirm('TEM CERTEZA? Isso vai apagar TODOS os jogos, participantes e palpites.')) return;
+  if (!confirm('Confirmar: excluir todos os dados do bolão?')) return;
+  jogos = []; participantes = []; palpites = [];
+  ['jogos.json', 'participantes.json', 'palpites.json'].forEach(arq => {
+    localStorage.setItem(arq, '[]');
+    try { fetch(arq, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: '[]' }); } catch (e) {}
+  });
+  renderAdmin();
+  document.getElementById('contagem-admin').textContent = '0 jogos';
+  document.getElementById('contagem-parts').textContent = '0 participante(s)';
+  mostrarToast('Todos os dados foram limpos!', 'sucesso');
+}
+
+// --- Senha Dinâmica ---
+
+function calcularSenha() {
+  const agora = new Date();
+  const dia = String(agora.getDate()).padStart(2, '0');
+  const mes = String(agora.getMonth() + 1).padStart(2, '0');
+  const hora = String(agora.getHours()).padStart(2, '0');
+  const min = String(agora.getMinutes()).padStart(2, '0');
+  return dia + mes + hora + min;
+}
+
+let urlsQR = [];
+
+function gerarQRCode() {
+  fetch('/server-ip').then(r => r.json()).then(d => {
+    const container = document.getElementById('qrcode-container');
+    container.innerHTML = '';
+    urlsQR = [];
+    d.interfaces.forEach((iface, i) => {
+      const url = `http://${iface.ip}:${d.port}/`;
+      urlsQR.push(url);
+      const div = document.createElement('div');
+      div.style.textAlign = 'center';
+      div.innerHTML = `
+        <div id="qrcode-${i}" style="display:inline-block;"></div>
+        <p style="font-size:13px;color:#888;margin-top:4px;">${iface.nome}</p>
+        <p style="font-size:14px;font-weight:700;color:#4361ee;cursor:pointer;" onclick="copiarUrl('${url}')">${url}</p>
+      `;
+      container.appendChild(div);
+      new QRCode(document.getElementById(`qrcode-${i}`), {
+        text: url,
+        width: 140,
+        height: 140,
+        colorDark: '#1a1a2e',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.H
+      });
+    });
+  }).catch(() => {
+    const url = window.location.origin + '/';
+    document.getElementById('qrcode-container').innerHTML = `
+      <div id="qrcode-fallback"></div>
+      <div><p style="font-size:14px;font-weight:700;color:#4361ee;" onclick="copiarUrl('${url}')">${url}</p></div>
+    `;
+    new QRCode(document.getElementById('qrcode-fallback'), {
+      text: url, width: 140, height: 140,
+      colorDark: '#1a1a2e', colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.H
+    });
+  });
+}
+
+function copiarUrl(url) {
+  navigator.clipboard.writeText(url).then(() => mostrarToast('Link copiado!', 'sucesso'));
+}
+
+function verificarSenha() {
+  const input = document.getElementById('input-senha');
+  if (input.value === calcularSenha()) {
+    document.getElementById('tela-senha').style.display = 'none';
+    document.getElementById('conteudo-admin').style.display = 'block';
+    gerarQRCode();
+    carregarDados();
+  } else {
+    mostrarToast('Senha incorreta!', 'erro');
+    input.value = '';
+    input.focus();
+  }
+}
+
+// --- Salvar ---
+
+async function salvarJSON(arquivo, dados) {
+  localStorage.setItem(arquivo, JSON.stringify(dados, null, 2));
+  try {
+    await fetch(arquivo, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados, null, 2) });
+  } catch (e) {}
+}
+
+async function recarregarDados() {
+  try {
+    const [rj, rp, rpp] = await Promise.all([
+      fetch('jogos.json').then(r => r.json()),
+      fetch('participantes.json').then(r => r.json()),
+      fetch('palpites.json').then(r => r.json())
+    ]);
+    jogos = rj; participantes = rp; palpites = rpp;
+    localStorage.setItem('jogos.json', JSON.stringify(jogos));
+    localStorage.setItem('participantes.json', JSON.stringify(participantes));
+    localStorage.setItem('palpites.json', JSON.stringify(palpites));
+    renderAdmin();
+  } catch (e) {}
+}
+
+// --- Init ---
+setInterval(recarregarDados, 30000);
+</script>
+</body>
+</html>
