@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bolão — Resultados</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f0f2f5; color: #1a1a2e; padding: 20px;
+    }
+    .container { max-width: 800px; margin: 0 auto; }
+    h1 { text-align: center; margin-bottom: 20px; font-size: 26px; }
+    h1 span { color: #e63946; }
+    .nav-links { text-align: center; margin-bottom: 20px; }
+    .nav-links a { color: #888; font-size: 13px; text-decoration: none; margin: 0 10px; }
+    .nav-links a:hover { color: #4361ee; }
+    .card {
+      background: #fff; border-radius: 12px; padding: 20px;
+      margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .card-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 16px; padding-bottom: 12px;
+      border-bottom: 2px solid #f0f2f5;
+    }
+    .card-header h2 { font-size: 18px; color: #333; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #f0f2f5; }
+    th { font-size: 13px; color: #888; font-weight: 600; }
+    td { font-size: 14px; }
+    .pos { font-weight: 700; color: #4361ee; }
+    .pos-1 { color: #d4af37; }
+    .pos-2 { color: #a0a0a0; }
+    .pos-3 { color: #cd7f32; }
+    .acerto { color: #2e7d32; font-weight: 700; }
+    .erro { color: #c62828; }
+    .pendente { color: #e65100; }
+    .vazio { text-align: center; padding: 32px; color: #999; }
+    .jogo-resultado { margin-bottom: 16px; }
+    .jogo-resultado h3 { font-size: 16px; margin-bottom: 8px; }
+    .jogo-placar { font-size: 24px; font-weight: 700; text-align: center; margin: 8px 0; }
+    .jogo-info { font-size: 13px; color: #888; text-align: center; }
+    .btn { padding: 10px 20px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    .btn-outline { background: transparent; border: 2px solid #e0e0e0; color: #666; }
+    .btn-outline:hover { border-color: #4361ee; color: #4361ee; }
+    .btn-sm { padding: 6px 14px; font-size: 12px; }
+    @media (max-width: 600px) {
+      th, td { padding: 6px 8px; font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>⚽ <span id="titulo-bolao">Bolão</span> — Resultados</h1>
+  <div class="nav-links">
+    <a href="index.html">🎯 Apostar</a>
+  </div>
+
+  <div class="card" id="card-ranking">
+    <div class="card-header">
+      <h2>Classificação</h2>
+      <span id="contagem-jogos-fin" style="font-size:13px;color:#888;"></span>
+    </div>
+    <div id="ranking"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h2>Detalhamento por Jogo</h2>
+      <button class="btn btn-outline btn-sm" onclick="carregarDados()">🔄</button>
+    </div>
+    <div id="detalhes-jogos"></div>
+  </div>
+</div>
+
+<script>
+let jogos = [];
+let participantes = [];
+let palpites = [];
+
+function fmtData(d) { if (!d) return ''; const p = d.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
+
+async function carregarDados() {
+  try {
+    const [rj, rp, rpp] = await Promise.all([
+      fetch('jogos.json').then(r => r.json()),
+      fetch('participantes.json').then(r => r.json()),
+      fetch('palpites.json').then(r => r.json())
+    ]);
+    jogos = rj; participantes = rp; palpites = rpp;
+    renderizar();
+  } catch (e) {}
+}
+
+function renderizar() {
+  const finalizados = jogos.filter(j => j.placar_casa !== null);
+  document.getElementById('contagem-jogos-fin').textContent = finalizados.length + ' encerrado(s)';
+
+  if (!finalizados.length) {
+    document.getElementById('ranking').innerHTML = '<div class="vazio">Nenhum jogo encerrado ainda</div>';
+    document.getElementById('detalhes-jogos').innerHTML = '';
+    return;
+  }
+
+  renderizarRanking(finalizados);
+  renderizarDetalhes(finalizados);
+}
+
+function renderizarRanking(finalizados) {
+  const stats = {};
+  participantes.forEach(p => { stats[p.id] = { nome: p.nome, acertos: 0, total: 0 }; });
+
+  palpites.forEach(pal => {
+    const jogo = jogos.find(j => j.id === pal.jogo_id);
+    const stat = pal.status || 'approved';
+    if (!jogo || jogo.placar_casa === null || stat !== 'approved') return;
+    if (!stats[pal.participante_id]) return;
+    stats[pal.participante_id].total++;
+    if (pal.placar_casa === jogo.placar_casa && pal.placar_fora === jogo.placar_fora)
+      stats[pal.participante_id].acertos++;
+  });
+
+  const sorted = Object.values(stats).filter(s => s.total > 0)
+    .sort((a, b) => b.acertos - a.acertos || a.total - b.total);
+
+  if (!sorted.length) {
+    document.getElementById('ranking').innerHTML = '<div class="vazio">Nenhum palpite em jogos encerrados</div>';
+    return;
+  }
+
+  document.getElementById('ranking').innerHTML = `<table>
+    <thead><tr><th>#</th><th>Participante</th><th>Acertos</th><th>Total</th><th>%</th></tr></thead>
+    <tbody>${sorted.map((s, i) => {
+      const pct = ((s.acertos / s.total) * 100).toFixed(0);
+      const posClass = i === 0 ? 'pos-1' : i === 1 ? 'pos-2' : i === 2 ? 'pos-3' : '';
+      return `<tr>
+        <td class="pos ${posClass}">${i + 1}º</td>
+        <td><strong>${s.nome}</strong></td>
+        <td class="acerto">${s.acertos}</td>
+        <td>${s.total}</td>
+        <td><strong>${pct}%</strong></td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`;
+}
+
+function renderizarDetalhes(finalizados) {
+  document.getElementById('detalhes-jogos').innerHTML = finalizados.map(jogo => {
+    const palpitesJogo = palpites.filter(p => p.jogo_id === jogo.id && (p.status || 'approved') === 'approved');
+
+    const linhas = palpitesJogo.map(p => {
+      const part = participantes.find(x => x.id === p.participante_id);
+      const nome = part ? part.nome : 'ID ' + p.participante_id;
+      const certo = p.placar_casa === jogo.placar_casa && p.placar_fora === jogo.placar_fora;
+      return `<tr>
+        <td>${nome}</td>
+        <td style="text-align:center;"><strong>${p.placar_casa} × ${p.placar_fora}</strong></td>
+        <td style="text-align:center;">${certo ? '<span class="acerto">✅</span>' : '<span class="erro">❌</span>'}</td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="3" class="vazio">Nenhum palpite neste jogo</td></tr>';
+
+    return `<div class="jogo-resultado card" style="padding:14px;">
+      <h3>${jogo.time_casa} × ${jogo.time_fora}</h3>
+      <div class="jogo-placar">${jogo.placar_casa} × ${jogo.placar_fora}</div>
+      <div class="jogo-info">${fmtData(jogo.data)} às ${jogo.horario} · ${jogo.estadio} · ${jogo.fase}</div>
+      <table style="margin-top:12px;">
+        <thead><tr><th>Participante</th><th style="text-align:center;">Palpite</th><th style="text-align:center;"></th></tr></thead>
+        <tbody>${linhas}</tbody>
+      </table>
+    </div>`;
+  }).join('');
+}
+
+async function carregarConfig() {
+  try {
+    const r = await fetch('bolao_config.json');
+    const c = await r.json();
+    if (c.titulo) document.getElementById('titulo-bolao').textContent = c.titulo;
+  } catch (e) {}
+}
+carregarConfig();
+carregarDados();
+setInterval(carregarDados, 30000);
+</script>
+</body>
+</html>

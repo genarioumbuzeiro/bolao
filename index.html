@@ -119,7 +119,10 @@
 </head>
 <body>
 <div class="container">
-  <h1>⚽ <span>Bolão</span> de Jogos</h1>
+  <h1>⚽ <span id="titulo-bolao">Bolão</span></h1>
+  <div class="nav-admin">
+    <a href="resultados.html">📊 Resultados</a>
+  </div>
 
   <!-- Identificação -->
   <div class="card">
@@ -128,10 +131,17 @@
       <span id="status-part" style="font-size:13px;color:#888;">Não identificado</span>
     </div>
     <div class="part-form" id="form-part">
-      <input type="text" id="input-nome" list="lista-nomes" placeholder="Seu nome" autocomplete="off" />
-      <datalist id="lista-nomes"></datalist>
-      <input type="tel" id="input-telefone" placeholder="Seu telefone" />
-      <button class="btn btn-primary" onclick="entrar()">Entrar</button>
+      <input type="tel" id="input-telefone" placeholder="Seu telefone" autocomplete="off" />
+      <input type="password" id="input-senha" placeholder="Sua senha" />
+      <button class="btn btn-primary" onclick="entrar()" style="flex:1;">Entrar</button>
+      <button class="btn btn-outline" onclick="mostrarFormCadastro()" style="width:100%;margin-top:8px;">📝 Solicitar Cadastro</button>
+    </div>
+    <div class="part-form hidden" id="form-cadastro" style="margin-top:10px;border-top:1px solid #f0f2f5;padding-top:12px;">
+      <input type="text" id="cad-nome" placeholder="Seu nome" />
+      <input type="tel" id="cad-telefone" placeholder="Seu telefone" />
+      <input type="password" id="cad-senha" placeholder="Crie uma senha" />
+      <button class="btn btn-success" onclick="solicitarCadastro()">Solicitar</button>
+      <button class="btn btn-outline btn-sm" onclick="cancelarCadastro()">Cancelar</button>
     </div>
     <div class="part-info hidden" id="info-part">
       <strong id="nome-exibido"></strong>
@@ -167,6 +177,8 @@ let participantes = [];
 let palpites = [];
 let participanteAtual = null;
 
+function fmtData(d) { if (!d) return ''; const p = d.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
+
 function mostrarToast(msg, tipo) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.className = 'toast ' + (tipo || '') + ' show';
@@ -193,22 +205,21 @@ async function carregarDados() {
   document.getElementById('contagem-jogos').textContent = jogos.length + ' jogos';
 }
 
-function atualizarDatalist() {
-  const dl = document.getElementById('lista-nomes');
-  dl.innerHTML = participantes.map(p => `<option value="${p.nome}"></option>`).join('');
-}
-
 function entrar() {
-  const nome = document.getElementById('input-nome').value.trim();
   const telefone = document.getElementById('input-telefone').value.trim();
-  if (!nome || !telefone) { mostrarToast('Preencha nome e telefone', 'erro'); return; }
+  const senha = document.getElementById('input-senha').value;
+  if (!telefone || !senha) { mostrarToast('Preencha telefone e senha', 'erro'); return; }
 
-  const p = participantes.find(x => x.nome.toLowerCase() === nome.toLowerCase());
-  if (!p) { mostrarToast('Usuário não cadastrado. Procure o admin.', 'erro'); return; }
-  if (p.telefone !== telefone) { mostrarToast('Telefone não confere com o cadastro', 'erro'); return; }
+  const p = participantes.find(x => x.telefone === telefone);
+  if (!p) { mostrarToast('Telefone não encontrado. Solicite cadastro.', 'erro'); return; }
+  if (p.senha !== senha) { mostrarToast('Senha incorreta', 'erro'); return; }
+  const st = p.status || 'approved';
+  if (st === 'pending') { mostrarToast('Seu cadastro está pendente de aprovação.', 'erro'); return; }
+  if (st === 'rejected') { mostrarToast('Seu cadastro foi recusado. Procure o admin.', 'erro'); return; }
 
   participanteAtual = p;
   document.getElementById('form-part').classList.add('hidden');
+  document.getElementById('form-cadastro').classList.add('hidden');
   document.getElementById('info-part').classList.remove('hidden');
   document.getElementById('nome-exibido').textContent = p.nome;
   document.getElementById('tel-exibido').textContent = p.telefone;
@@ -218,13 +229,42 @@ function entrar() {
   renderizarPalpites();
 }
 
+function mostrarFormCadastro() {
+  document.getElementById('form-part').style.display = 'none';
+  document.getElementById('form-cadastro').classList.remove('hidden');
+}
+
+function cancelarCadastro() {
+  document.getElementById('form-part').style.display = '';
+  document.getElementById('form-cadastro').classList.add('hidden');
+}
+
+async function solicitarCadastro() {
+  const nome = document.getElementById('cad-nome').value.trim();
+  const telefone = document.getElementById('cad-telefone').value.trim();
+  const senha = document.getElementById('cad-senha').value;
+  if (!nome || !telefone || !senha) { mostrarToast('Preencha nome, telefone e senha', 'erro'); return; }
+  try {
+    const r = await fetch('api/solicitar-cadastro', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nome, telefone, senha })
+    });
+    const d = await r.json();
+    if (d.ok) { mostrarToast(d.mensagem, 'sucesso'); cancelarCadastro(); carregarDados(); }
+    else mostrarToast(d.erro || 'Erro ao solicitar', 'erro');
+  } catch (e) { mostrarToast('Erro ao solicitar cadastro', 'erro'); }
+}
+
 function sair() {
   participanteAtual = null;
   document.getElementById('form-part').classList.remove('hidden');
+  document.getElementById('form-part').style.display = '';
+  document.getElementById('form-cadastro').classList.add('hidden');
   document.getElementById('info-part').classList.add('hidden');
   document.getElementById('status-part').textContent = 'Não identificado';
-  document.getElementById('input-nome').value = '';
   document.getElementById('input-telefone').value = '';
+  document.getElementById('input-senha').value = '';
   renderizarJogos();
   renderizarPalpites();
 }
@@ -269,7 +309,7 @@ function renderizarJogos() {
     return `<div class="jogo">
       <div class="jogo-info">
         <div class="jogo-times">${j.time_casa} × ${j.time_fora}</div>
-        <div class="jogo-detalhes">${j.data} às ${j.horario} · ${j.estadio} · ${j.fase}</div>
+        <div class="jogo-detalhes">${fmtData(j.data)} às ${j.horario} · ${j.estadio} · ${j.fase}</div>
         <div class="jogo-odds">
           <span>Casa: ${j.odds_casa?.toFixed(2) || '-'}</span>
           <span>Empate: ${j.odds_empate?.toFixed(2) || '-'}</span>
@@ -298,7 +338,7 @@ function marcarPalpite(jogoId) {
   const f = parseInt(document.getElementById('pf-' + jogoId).value) || 0;
   const idx = palpites.findIndex(p => p.jogo_id === jogoId && p.participante_id === participanteAtual.id);
   if (idx >= 0) { palpites[idx].placar_casa = c; palpites[idx].placar_fora = f; }
-  else { palpites.push({ id: Date.now() + jogoId, participante_id: participanteAtual.id, jogo_id: jogoId, placar_casa: c, placar_fora: f }); }
+  else { palpites.push({ id: Date.now() + jogoId, participante_id: participanteAtual.id, jogo_id: jogoId, placar_casa: c, placar_fora: f, status: 'pending' }); }
 }
 
 function renderizarPalpites() {
@@ -311,14 +351,19 @@ function renderizarPalpites() {
     const j = jogos.find(x => x.id === p.jogo_id);
     if (!j) return '';
     const fin = j.placar_casa !== null;
-    let status = '<span class="palpite-pendente">⏳ Pendente</span>';
-    if (fin) {
+    const stat = p.status || 'approved';
+    let status = '';
+    if (stat === 'pending') status = '<span class="palpite-pendente">⏳ Aguardando</span>';
+    else if (stat === 'rejected') status = '<span class="palpite-erro">❌ Recusado</span>';
+    else if (fin) {
       status = (p.placar_casa === j.placar_casa && p.placar_fora === j.placar_fora)
         ? '<span class="palpite-acerto">✅ Acertou!</span>'
         : '<span class="palpite-erro">❌ Errou</span>';
+    } else {
+      status = '<span class="palpite-acerto">✅ Aprovado</span>';
     }
     return `<div class="palpite-item">
-      <span><strong>${j.time_casa} × ${j.time_fora}</strong><br><span style="font-size:12px;color:#888;">${j.fase} · ${j.data}</span></span>
+      <span><strong>${j.time_casa} × ${j.time_fora}</strong><br><span style="font-size:12px;color:#888;">${j.fase} · ${fmtData(j.data)}</span></span>
       <span><strong>${p.placar_casa} × ${p.placar_fora}</strong> ${status}</span>
     </div>`;
   }).join('');
@@ -353,6 +398,16 @@ async function salvarPalpites() {
   mostrarToast('Palpites salvos!', 'sucesso');
 }
 
+async function carregarConfig() {
+  try {
+    const r = await fetch('bolao_config.json');
+    const c = await r.json();
+    if (c.titulo) document.getElementById('titulo-bolao').textContent = c.titulo;
+  } catch (e) {
+    try { const c = JSON.parse(localStorage.getItem('bolao_config.json')); if (c?.titulo) document.getElementById('titulo-bolao').textContent = c.titulo; } catch (e2) {}
+  }
+}
+carregarConfig();
 carregarDados();
 setInterval(recarregarDados, 30000);
 </script>

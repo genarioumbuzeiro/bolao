@@ -110,117 +110,129 @@
     .toast.erro { background: #e63946; }
     .toast.sucesso { background: #2ec4b6; }
 
-    .overlay {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.6);
-      display: flex; align-items: center; justify-content: center;
-      z-index: 9999;
+    .tab-bar {
+      display: flex; gap: 4px; margin-bottom: 20px; flex-wrap: wrap;
     }
-    .overlay-card {
-      background: #fff; border-radius: 16px; padding: 32px;
-      width: 340px; max-width: 90%; text-align: center;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    .tab-btn {
+      padding: 10px 18px; border: none; border-radius: 8px;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      background: #e0e0e0; color: #666; transition: all 0.2s; flex: 1; min-width: 80px; text-align: center;
     }
-    .overlay-card h2 { margin-bottom: 8px; font-size: 20px; }
-    .overlay-card p { font-size: 13px; color: #888; margin-bottom: 20px; }
-    .overlay-card input {
-      width: 100%; padding: 12px; text-align: center; font-size: 24px;
-      font-weight: 700; letter-spacing: 4px;
-      border: 2px solid #e0e0e0; border-radius: 8px; outline: none;
-      margin-bottom: 16px;
-    }
-    .overlay-card input:focus { border-color: #4361ee; }
+    .tab-btn:hover { background: #d0d0d0; }
+    .tab-btn.active { background: #4361ee; color: #fff; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
     @media (max-width: 600px) {
       .form-grid { grid-template-columns: 1fr; }
+      .tab-btn { font-size: 12px; padding: 8px 6px; min-width: 60px; }
     }
   </style>
 </head>
 <body>
-<div class="overlay" id="tela-senha">
-  <div class="overlay-card">
-    <h2>🔒 Admin</h2>
-    <p>Digite a senha dinâmica para acessar</p>
-    <input type="password" id="input-senha" maxlength="8" placeholder="------" autocomplete="off" onkeydown="if(event.key==='Enter')verificarSenha()" />
-    <button class="btn btn-primary" onclick="verificarSenha()" style="width:100%;">Entrar</button>
-  </div>
-</div>
-<div class="container" id="conteudo-admin" style="display:none;">
+<div class="container" id="conteudo-admin">
   <h1>⚙️ <span>Bolão</span> — Admin</h1>
 
   <div class="nav-user">
-    <a href="index.html">🎯 Ir para Apostador</a>
+    <a href="index.html" target="_blank">🎯 Apostador</a>
+    <a href="resultados.html" target="_blank" style="margin-left:12px;">📊 Resultados</a>
   </div>
 
-  <!-- QR Code -->
-  <div class="card" id="card-qrcode">
-    <div class="card-header"><h2>Compartilhe com os Apostadores</h2></div>
-    <div id="qrcode-container" style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;"></div>
+  <div class="tab-bar" id="tabBar">
+    <button class="tab-btn active" data-tab="tab-jogos">📋 Jogos</button>
+    <button class="tab-btn" data-tab="tab-participantes">👥 Participantes</button>
+    <button class="tab-btn" data-tab="tab-aprovar">✅ Aprovar</button>
+    <button class="tab-btn" data-tab="tab-palpites">📊 Palpites</button>
+    <button class="tab-btn" data-tab="tab-config">⚙️ Config</button>
   </div>
 
-  <!-- Cadastrar participante -->
-  <div class="card">
-    <div class="card-header">
-      <h2 id="titulo-form-part">Cadastrar Participante</h2>
-    </div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;">
-      <input type="text" id="cad-part-nome" placeholder="Nome completo" style="flex:1;min-width:200px;padding:10px 14px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;outline:none;" />
-      <input type="tel" id="cad-part-tel" placeholder="Telefone" style="flex:1;min-width:160px;padding:10px 14px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;outline:none;" />
-      <button class="btn btn-success" onclick="adicionarParticipante()">Adicionar</button>
-      <button class="btn btn-outline btn-sm hidden" id="btn-cancel-part" onclick="cancelarEdicaoPart()">Cancelar</button>
-    </div>
-  </div>
-
-  <!-- Participantes -->
-  <div class="card">
-    <div class="card-header">
-      <h2>Participantes</h2>
-      <span id="contagem-parts" style="font-size:13px;color:#888;"></span>
-    </div>
-    <div id="lista-participantes"></div>
-  </div>
-
-  <!-- Cadastrar jogo -->
-  <div class="card">
-    <div class="card-header">
-      <h2 id="titulo-form-jogo">Cadastrar Jogo</h2>
-    </div>
-    <div class="form-grid">
-      <input type="text" id="cad-time-casa" placeholder="Time casa" />
-      <input type="text" id="cad-time-fora" placeholder="Time fora" />
-      <input type="date" id="cad-data" />
-      <input type="time" id="cad-horario" value="16:00" />
-      <input type="text" id="cad-estadio" placeholder="Estádio" />
-      <input type="text" id="cad-fase" placeholder="Fase" />
-      <input type="number" step="0.01" id="cad-odds-casa" placeholder="Odd casa" />
-      <input type="number" step="0.01" id="cad-odds-empate" placeholder="Odd empate" />
-      <input type="number" step="0.01" id="cad-odds-fora" placeholder="Odd fora" />
-      <div class="actions">
-        <button class="btn btn-outline btn-sm hidden" id="btn-cancel-edicao" onclick="cancelarEdicaoJogo()">Cancelar</button>
-        <button class="btn btn-success" onclick="adicionarJogo()">Adicionar Jogo</button>
+  <!-- Tab: Jogos -->
+  <div class="tab-content active" id="tab-jogos">
+    <div class="card">
+      <div class="card-header"><h2 id="titulo-form-jogo">Cadastrar Jogo</h2></div>
+      <div class="form-grid">
+        <input type="text" id="cad-time-casa" placeholder="Time casa" />
+        <input type="text" id="cad-time-fora" placeholder="Time fora" />
+        <input type="date" id="cad-data" />
+        <input type="time" id="cad-horario" value="16:00" />
+        <input type="text" id="cad-estadio" placeholder="Estádio" />
+        <input type="text" id="cad-fase" placeholder="Fase" />
+        <input type="number" step="0.01" id="cad-odds-casa" placeholder="Odd casa" />
+        <input type="number" step="0.01" id="cad-odds-empate" placeholder="Odd empate" />
+        <input type="number" step="0.01" id="cad-odds-fora" placeholder="Odd fora" />
+        <div class="actions">
+          <button class="btn btn-outline btn-sm hidden" id="btn-cancel-edicao" onclick="cancelarEdicaoJogo()">Cancelar</button>
+          <button class="btn btn-success" onclick="adicionarJogo()">Adicionar Jogo</button>
+        </div>
       </div>
     </div>
-  </div>
-
-  <!-- Gerenciar jogos -->
-  <div class="card">
-    <div class="card-header">
-      <h2>Gerenciar Jogos</h2>
-      <span id="contagem-admin" style="font-size:13px;color:#888;"></span>
+    <div class="card">
+      <div class="card-header">
+        <h2>Gerenciar Jogos</h2>
+        <span id="contagem-admin" style="font-size:13px;color:#888;"></span>
+      </div>
+      <div id="lista-admin-jogos"></div>
     </div>
-    <div id="lista-admin-jogos"></div>
   </div>
 
-  <!-- Todos os palpites -->
-  <div class="card">
-    <div class="card-header"><h2>Todos os Palpites</h2></div>
-    <div id="lista-todos-palpites"></div>
+  <!-- Tab: Participantes -->
+  <div class="tab-content" id="tab-participantes">
+    <div class="card">
+      <div class="card-header"><h2 id="titulo-form-part">Cadastrar Participante</h2></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <input type="text" id="cad-part-nome" placeholder="Nome completo" style="flex:1;min-width:200px;padding:10px 14px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;outline:none;" />
+        <input type="tel" id="cad-part-tel" placeholder="Telefone" style="flex:1;min-width:160px;padding:10px 14px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;outline:none;" />
+        <input type="password" id="cad-part-senha" placeholder="Senha" style="flex:1;min-width:120px;padding:10px 14px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;outline:none;" />
+        <button class="btn btn-success" onclick="adicionarParticipante()">Adicionar</button>
+        <button class="btn btn-outline btn-sm hidden" id="btn-cancel-part" onclick="cancelarEdicaoPart()">Cancelar</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <h2>Participantes</h2>
+        <span><span id="contagem-parts" style="font-size:13px;color:#888;"></span><button class="btn btn-outline btn-sm" style="margin-left:8px;" onclick="recarregarDados()" title="Atualizar">🔄</button></span>
+      </div>
+      <div id="lista-participantes"></div>
+    </div>
   </div>
 
-  <!-- Zerar -->
-  <div class="card">
-    <div class="card-header"><h2>Zerar Bolão</h2></div>
-    <div style="text-align:center;">
-      <p style="font-size:13px;color:#888;margin-bottom:12px;">Remove todos os jogos, participantes e palpites. Esta ação não pode ser desfeita.</p>
-      <button class="btn btn-danger" onclick="limparTudo()">🗑️ Limpar Todos os Dados</button>
+  <!-- Tab: Aprovar -->
+  <div class="tab-content" id="tab-aprovar">
+    <div class="card">
+      <div class="card-header"><h2>Aprovar Palpites</h2><button class="btn btn-outline btn-sm" onclick="renderAprovarPalpites()">🔄</button></div>
+      <div id="lista-aprovar-palpites"></div>
+    </div>
+  </div>
+
+  <!-- Tab: Palpites -->
+  <div class="tab-content" id="tab-palpites">
+    <div class="card">
+      <div class="card-header"><h2>Todos os Palpites</h2><button class="btn btn-outline btn-sm" onclick="recarregarDados()" title="Atualizar lista">🔄</button></div>
+      <div id="lista-todos-palpites"></div>
+    </div>
+  </div>
+
+  <!-- Tab: Config -->
+  <div class="tab-content" id="tab-config">
+    <div class="card" id="card-qrcode">
+      <div class="card-header"><h2>Compartilhe com os Apostadores</h2></div>
+      <div id="qrcode-container" style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;"></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h2>Personalizar</h2></div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <input type="text" id="cfg-titulo" placeholder="Título do Bolão" style="flex:1;min-width:200px;padding:10px 14px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;outline:none;" />
+        <button class="btn btn-success" onclick="salvarTitulo()">💾 Salvar</button>
+      </div>
+      <div style="margin-top:12px;font-size:13px;color:#888;" id="cfg-server-info"></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h2>Zerar Bolão</h2></div>
+      <div style="text-align:center;">
+        <p style="font-size:13px;color:#888;margin-bottom:12px;">Remove todos os jogos, participantes e palpites. Esta ação não pode ser desfeita.</p>
+        <button class="btn btn-danger" onclick="limparTudo()">🗑️ Limpar Todos os Dados</button>
+        <button class="btn btn-outline" style="margin-top:8px;border-color:#e0a800;color:#e0a800;" onclick="limparPalpites()">🧹 Zerar só Palpites</button>
+        <button class="btn btn-outline" style="margin-top:8px;border-color:#e63946;color:#e63946;" onclick="limparParticipantes()">👥 Excluir Todos os Participantes</button>
+      </div>
     </div>
   </div>
 </div>
@@ -233,6 +245,8 @@ let participantes = [];
 let palpites = [];
 let editandoJogoId = null;
 let editandoPartId = null;
+
+function fmtData(d) { if (!d) return ''; const p = d.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
 
 function mostrarToast(msg, tipo) {
   const t = document.getElementById('toast');
@@ -261,6 +275,7 @@ function renderAdmin() {
   renderAdminJogos();
   renderParticipantes();
   renderTodosPalpites();
+  renderAprovarPalpites();
   document.getElementById('contagem-admin').textContent = jogos.length + ' jogos';
   document.getElementById('contagem-parts').textContent = participantes.length + ' participante(s)';
 }
@@ -270,6 +285,7 @@ function renderAdmin() {
 function limparFormPart() {
   document.getElementById('cad-part-nome').value = '';
   document.getElementById('cad-part-tel').value = '';
+  document.getElementById('cad-part-senha').value = '';
   document.getElementById('titulo-form-part').textContent = 'Cadastrar Participante';
   document.getElementById('btn-cancel-part').classList.add('hidden');
   editandoPartId = null;
@@ -280,6 +296,7 @@ function cancelarEdicaoPart() { limparFormPart(); }
 function adicionarParticipante() {
   const nome = document.getElementById('cad-part-nome').value.trim();
   const tel = document.getElementById('cad-part-tel').value.trim();
+  const senha = document.getElementById('cad-part-senha').value;
   if (!nome || !tel) { mostrarToast('Preencha nome e telefone', 'erro'); return; }
 
   if (participantes.some(p => p.nome.toLowerCase() === nome.toLowerCase() && p.id !== editandoPartId)) {
@@ -289,11 +306,11 @@ function adicionarParticipante() {
 
   if (editandoPartId) {
     const idx = participantes.findIndex(p => p.id === editandoPartId);
-    if (idx >= 0) { participantes[idx].nome = nome; participantes[idx].telefone = tel; }
+    if (idx >= 0) { participantes[idx].nome = nome; participantes[idx].telefone = tel; if (senha) participantes[idx].senha = senha; }
     editandoPartId = null;
     mostrarToast('Participante atualizado!', 'sucesso');
   } else {
-    participantes.push({ id: Date.now(), nome, telefone: tel });
+    participantes.push({ id: Date.now(), nome, telefone: tel, senha: senha || '1234', status: 'approved' });
     mostrarToast('Participante cadastrado!', 'sucesso');
   }
 
@@ -308,6 +325,7 @@ function editarParticipante(id) {
   if (!p) return;
   document.getElementById('cad-part-nome').value = p.nome;
   document.getElementById('cad-part-tel').value = p.telefone;
+  document.getElementById('cad-part-senha').value = p.senha || '';
   editandoPartId = id;
   document.getElementById('titulo-form-part').textContent = 'Editando Participante';
   document.getElementById('btn-cancel-part').classList.remove('hidden');
@@ -325,14 +343,28 @@ function excluirParticipante(id) {
   mostrarToast('Participante excluído', 'sucesso');
 }
 
+function aprovarParticipante(id, status) {
+  const p = participantes.find(x => x.id === id);
+  if (!p) return;
+  p.status = status;
+  salvarJSON('participantes.json', participantes);
+  renderParticipantes();
+  mostrarToast(status === 'approved' ? 'Participante aprovado!' : 'Participante recusado!', 'sucesso');
+}
+
 function renderParticipantes() {
   const div = document.getElementById('lista-participantes');
   if (!participantes.length) { div.innerHTML = '<div class="vazio">Nenhum participante cadastrado</div>'; return; }
   div.innerHTML = participantes.map(p => {
     const qtd = palpites.filter(x => x.participante_id === p.id).length;
+    const st = p.status || 'approved';
+    let badge = '<span class="palpite-acerto" style="font-size:11px;">✅</span>';
+    if (st === 'pending') badge = '<span class="palpite-pendente" style="font-size:11px;">⏳ Pendente</span>';
+    else if (st === 'rejected') badge = '<span class="palpite-erro" style="font-size:11px;">🚫</span>';
     return `<div class="part-row">
-      <span><strong>${p.nome}</strong> · ${p.telefone} · <span style="font-size:13px;color:#888;">${qtd} palpite(s)</span></span>
+      <span><strong>${p.nome}</strong> · ${p.telefone} · <span style="font-size:13px;color:#888;">${qtd} palpite(s)</span> ${badge}</span>
       <span style="display:flex;gap:6px;">
+        ${st === 'pending' ? `<button class="btn btn-success btn-sm" onclick="aprovarParticipante(${p.id},'approved')">✅</button><button class="btn btn-danger btn-sm" onclick="aprovarParticipante(${p.id},'rejected')">❌</button>` : ''}
         <button class="btn btn-warning btn-sm" onclick="editarParticipante(${p.id})">✏️</button>
         <button class="btn btn-danger btn-sm" onclick="excluirParticipante(${p.id})">🗑️</button>
       </span>
@@ -371,7 +403,7 @@ function renderAdminJogos() {
     return `<div class="jogo">
       <div class="jogo-info">
         <div class="jogo-times">${j.time_casa} × ${j.time_fora}</div>
-        <div class="jogo-detalhes">${j.data} às ${j.horario} · ${j.estadio} · ${j.fase}</div>
+        <div class="jogo-detalhes">${fmtData(j.data)} às ${j.horario} · ${j.estadio} · ${j.fase}</div>
         <div class="jogo-odds">
           <span>Casa: ${j.odds_casa?.toFixed(2) || '-'}</span>
           <span>Empate: ${j.odds_empate?.toFixed(2) || '-'}</span>
@@ -380,7 +412,7 @@ function renderAdminJogos() {
         <div class="jogo-acoes">
           <button class="btn btn-warning btn-sm" onclick="editarJogo(${j.id})">✏️ Editar</button>
           <button class="btn btn-danger btn-sm" onclick="excluirJogo(${j.id})">🗑️ Excluir</button>
-          ${fin || iniciado ? statusLabel : `<button class="btn btn-success btn-sm" onclick="finalizarJogo(${j.id})">✅ Finalizar</button>`}
+          ${fin ? statusLabel : `<button class="btn btn-success btn-sm" onclick="finalizarJogo(${j.id})">✅ Finalizar</button>`}
         </div>
       </div>
     </div>`;
@@ -497,12 +529,16 @@ function renderTodosPalpites() {
       if (!j) return '';
       const fin = j.placar_casa !== null;
       if (fin) { total++; if (p.placar_casa === j.placar_casa && p.placar_fora === j.placar_fora) acertos++; }
+      const stat = p.status || 'approved';
+      let badge = '';
+      if (!fin && stat === 'pending') badge = '<span class="palpite-pendente" style="font-size:11px;">⏳</span>';
+      else if (!fin && stat === 'rejected') badge = '<span class="palpite-erro" style="font-size:11px;">🚫</span>';
       return `<div class="palpite-item">
         <span>${j.time_casa} × ${j.time_fora}</span>
         <span><strong>${p.placar_casa} × ${p.placar_fora}</strong>
           ${fin
             ? (p.placar_casa === j.placar_casa && p.placar_fora === j.placar_fora ? '<span class="palpite-acerto">✅</span>' : '<span class="palpite-erro">❌</span>')
-            : '<span class="palpite-pendente">⏳</span>'}
+            : badge}
         </span>
       </div>`;
     }).join('');
@@ -515,6 +551,61 @@ function renderTodosPalpites() {
       ${detalhes}
     </div>`;
   }).join('');
+}
+
+// --- Aprovar palpites ---
+
+function renderAprovarPalpites() {
+  const div = document.getElementById('lista-aprovar-palpites');
+  const pendentes = palpites.filter(p => (p.status || 'approved') === 'pending');
+  if (!pendentes.length) { div.innerHTML = '<div class="vazio">Nenhum palpite pendente</div>'; return; }
+
+  const agrupado = {};
+  pendentes.forEach(p => {
+    if (!agrupado[p.participante_id]) agrupado[p.participante_id] = [];
+    agrupado[p.participante_id].push(p);
+  });
+
+  div.innerHTML = Object.keys(agrupado).map(idPart => {
+    const part = participantes.find(p => p.id === parseInt(idPart));
+    const nome = part ? part.nome : 'ID ' + idPart;
+    const lista = agrupado[idPart];
+    return `<div class="card" style="margin-bottom:12px;padding:14px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+        <strong>${nome}</strong>
+        <button class="btn btn-success btn-sm" onclick="aprovarTodos('${idPart}')">✅ Aprovar todos</button>
+      </div>
+      ${lista.map(p => {
+        const j = jogos.find(x => x.id === p.jogo_id);
+        if (!j) return '';
+        return `<div class="palpite-item">
+          <span>${j.time_casa} × ${j.time_fora}</span>
+          <span><strong>${p.placar_casa} × ${p.placar_fora}</strong></span>
+          <span style="display:flex;gap:6px;">
+            <button class="btn btn-success btn-sm" onclick="aprovarPalpite(${p.id},'approved')">✅</button>
+            <button class="btn btn-danger btn-sm" onclick="aprovarPalpite(${p.id},'rejected')">❌</button>
+          </span>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }).join('');
+}
+
+function aprovarPalpite(id, status) {
+  const p = palpites.find(x => x.id === id);
+  if (!p) return;
+  p.status = status;
+  salvarJSON('palpites.json', palpites);
+  renderAprovarPalpites();
+  renderTodosPalpites();
+}
+
+function aprovarTodos(participanteId) {
+  const pid = parseInt(participanteId);
+  palpites.forEach(p => { if (p.participante_id === pid && (p.status || 'approved') === 'pending') p.status = 'approved'; });
+  salvarJSON('palpites.json', palpites);
+  renderAprovarPalpites();
+  renderTodosPalpites();
 }
 
 // --- Limpar tudo ---
@@ -533,49 +624,51 @@ function limparTudo() {
   mostrarToast('Todos os dados foram limpos!', 'sucesso');
 }
 
-// --- Senha Dinâmica ---
+function limparParticipantes() {
+  if (!confirm('Excluir TODOS os participantes?')) return;
+  if (!confirm('Confirmar: remover todos os participantes cadastrados?')) return;
+  participantes = [];
+  localStorage.setItem('participantes.json', '[]');
+  try { fetch('participantes.json', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: '[]' }); } catch (e) {}
+  renderAdmin();
+  mostrarToast('Participantes excluídos!', 'sucesso');
+}
 
-function calcularSenha() {
-  const agora = new Date();
-  const dia = String(agora.getDate()).padStart(2, '0');
-  const mes = String(agora.getMonth() + 1).padStart(2, '0');
-  const hora = String(agora.getHours()).padStart(2, '0');
-  const min = String(agora.getMinutes()).padStart(2, '0');
-  return dia + mes + hora + min;
+function limparPalpites() {
+  if (!confirm('Zerar todos os palpites?')) return;
+  if (!confirm('Confirmar: apagar todos os palpites?')) return;
+  palpites = [];
+  localStorage.setItem('palpites.json', '[]');
+  try { fetch('palpites.json', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: '[]' }); } catch (e) {}
+  renderAdmin();
+  mostrarToast('Palpites zerados!', 'sucesso');
 }
 
 let urlsQR = [];
 
 function gerarQRCode() {
-  fetch('/server-ip').then(r => r.json()).then(d => {
+  fetch('server-ip').then(r => r.json()).then(d => {
     const container = document.getElementById('qrcode-container');
     container.innerHTML = '';
-    urlsQR = [];
-    d.interfaces.forEach((iface, i) => {
-      const url = `http://${iface.ip}:${d.port}/`;
-      urlsQR.push(url);
-      const div = document.createElement('div');
-      div.style.textAlign = 'center';
-      div.innerHTML = `
-        <div id="qrcode-${i}" style="display:inline-block;"></div>
-        <p style="font-size:13px;color:#888;margin-top:4px;">${iface.nome}</p>
-        <p style="font-size:14px;font-weight:700;color:#4361ee;cursor:pointer;" onclick="copiarUrl('${url}')">${url}</p>
-      `;
-      container.appendChild(div);
-      new QRCode(document.getElementById(`qrcode-${i}`), {
-        text: url,
-        width: 140,
-        height: 140,
-        colorDark: '#1a1a2e',
-        colorLight: '#ffffff',
-        correctLevel: QRCode.CorrectLevel.H
-      });
+    const url = `http://${d.hostname}${d.basePath || ''}/`;
+    urlsQR = [url];
+    container.innerHTML = `
+      <div style="text-align:center;">
+        <div id="qrcode-single" style="display:inline-block;"></div>
+        <p style="font-size:14px;font-weight:700;color:#4361ee;margin-top:8px;cursor:pointer;" onclick="copiarUrl('${url}')">${url}</p>
+        <button class="btn btn-outline btn-sm" style="margin-top:8px;" onclick="imprimirQR()">🖨️ Imprimir</button>
+      </div>
+    `;
+    new QRCode(document.getElementById('qrcode-single'), {
+      text: url, width: 180, height: 180,
+      colorDark: '#1a1a2e', colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.H
     });
   }).catch(() => {
     const url = window.location.origin + '/';
     document.getElementById('qrcode-container').innerHTML = `
       <div id="qrcode-fallback"></div>
-      <div><p style="font-size:14px;font-weight:700;color:#4361ee;" onclick="copiarUrl('${url}')">${url}</p></div>
+      <div><p style="font-size:14px;font-weight:700;color:#4361ee;cursor:pointer;" onclick="copiarUrl('${url}')">${url}</p></div>
     `;
     new QRCode(document.getElementById('qrcode-fallback'), {
       text: url, width: 140, height: 140,
@@ -585,22 +678,53 @@ function gerarQRCode() {
   });
 }
 
+function imprimirQR() {
+  const canvas = document.querySelector('#qrcode-single canvas');
+  const img = document.querySelector('#qrcode-single img');
+  const url = urlsQR[0] || '';
+  let src = '';
+  if (canvas) src = canvas.toDataURL();
+  else if (img) src = img.src;
+  if (!src) return;
+  const win = window.open('', '_blank');
+  win.document.write('<html><head><title>QR Code Bolão</title><style>body{text-align:center;padding:40px;font-family:sans-serif;}img{max-width:90%;width:400px;}p{font-size:18px;color:#4361ee;margin-top:16px;}@media print{button{display:none}}</style></head><body><img src="' + src + '" alt="QR Code"><p><strong>' + url + '</strong></p><p><button onclick="window.print()" style="padding:10px 24px;font-size:16px;">🖨️ Imprimir</button></p><p style="font-size:14px;color:#888;">Aponte a câmera do celular para participar do Bolão</p></body></html>');
+  win.document.close();
+}
+
 function copiarUrl(url) {
   navigator.clipboard.writeText(url).then(() => mostrarToast('Link copiado!', 'sucesso'));
 }
 
-function verificarSenha() {
-  const input = document.getElementById('input-senha');
-  if (input.value === calcularSenha()) {
-    document.getElementById('tela-senha').style.display = 'none';
-    document.getElementById('conteudo-admin').style.display = 'block';
-    gerarQRCode();
-    carregarDados();
-  } else {
-    mostrarToast('Senha incorreta!', 'erro');
-    input.value = '';
-    input.focus();
+
+// --- Config ---
+
+let config = { titulo: 'Bolão' };
+
+async function carregarConfig() {
+  try {
+    const r = await fetch('bolao_config.json');
+    config = await r.json();
+  } catch (e) {
+    config = JSON.parse(localStorage.getItem('bolao_config.json') || '{"titulo":"Bolão"}');
   }
+  document.getElementById('cfg-titulo').value = config.titulo || 'Bolão';
+  document.querySelector('h1 span').textContent = config.titulo || 'Bolão';
+
+  try {
+    const si = await fetch('server-ip').then(r => r.json());
+    const ips = si.interfaces.map(i => `${i.ip}:${si.port}${si.basePath || ''}`).join(', ');
+    document.getElementById('cfg-server-info').innerHTML = `🌐 Servidor: <strong>${si.hostname}</strong> (${ips})`;
+  } catch (e) {
+    document.getElementById('cfg-server-info').textContent = '🌐 IP: ' + window.location.host;
+  }
+}
+
+async function salvarTitulo() {
+  const val = document.getElementById('cfg-titulo').value.trim() || 'Bolão';
+  config.titulo = val;
+  await salvarJSON('bolao_config.json', config);
+  document.querySelector('h1 span').textContent = val;
+  mostrarToast('Título atualizado!', 'sucesso');
 }
 
 // --- Salvar ---
@@ -627,7 +751,19 @@ async function recarregarDados() {
   } catch (e) {}
 }
 
+// --- Abas ---
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tabId));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === tabId));
+}
+document.getElementById('tabBar').addEventListener('click', e => {
+  const btn = e.target.closest('.tab-btn');
+  if (btn) switchTab(btn.dataset.tab);
+});
+
 // --- Init ---
+gerarQRCode();
+carregarConfig().then(() => carregarDados());
 setInterval(recarregarDados, 30000);
 </script>
 </body>
