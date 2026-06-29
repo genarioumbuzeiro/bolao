@@ -25,6 +25,29 @@ app.get('/server-ip', (req, res) => {
   res.json({ interfaces: getInterfaces(), port: PORT });
 });
 
+app.post('/api/solicitar-cadastro', (req, res) => {
+  const { nome, telefone, senha } = req.body;
+  if (!nome || !telefone || !senha) return res.json({ ok: false, erro: 'Preencha todos os campos' });
+
+  const filePath = path.join(__dirname, 'participantes.json');
+  let participantes = [];
+  try { participantes = JSON.parse(fs.readFileSync(filePath, 'utf8')); } catch (e) {}
+
+  if (participantes.some(p => p.telefone === telefone))
+    return res.json({ ok: false, erro: 'Telefone já cadastrado' });
+
+  participantes.push({
+    id: Date.now(),
+    nome: nome.trim(),
+    telefone: telefone.trim(),
+    senha,
+    status: 'pending'
+  });
+
+  fs.writeFileSync(filePath, JSON.stringify(participantes, null, 2));
+  res.json({ ok: true, mensagem: 'Cadastro solicitado! Aguarde aprovação do admin.' });
+});
+
 app.put('/:arquivo', (req, res) => {
   const arquivo = req.params.arquivo;
   if (!arquivo.endsWith('.json')) return res.status(403).send('Apenas .json');
